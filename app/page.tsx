@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 type Material = {
@@ -11,6 +12,8 @@ type Material = {
   availability: string;
   accent: string;
 };
+
+type DeliveryType = keyof typeof DELIVERY_CHARGES;
 
 const UNIT_WEIGHT = 4200;
 const BUSINESS_PHONE = "+1 (800) 555-0147";
@@ -157,17 +160,19 @@ export default function Home() {
   const [quantity, setQuantity] = useState(3);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [orderReference, setOrderReference] = useState("");
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("standard");
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
     materialId: "sand",
     quantity: 3,
+    deliveryType: "standard" as DeliveryType,
     address: "",
     city: "",
     instructions: "",
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [deliveryCharge, setDeliveryCharge] = useState(DELIVERY_CHARGES.standard);
+  const deliveryCharge = DELIVERY_CHARGES[deliveryType];
 
   const selectedMaterial = useMemo(
     () =>
@@ -186,12 +191,18 @@ export default function Home() {
 
   const formSubtotal = form.quantity * (activeMaterial?.price ?? 0);
   const formWeight = form.quantity * UNIT_WEIGHT;
-  const formTotal = formSubtotal + deliveryCharge;
+  const formDeliveryCharge = DELIVERY_CHARGES[form.deliveryType];
+  const formTotal = formSubtotal + formDeliveryCharge;
 
   const handleQuantityChange = (nextValue: number) => {
     const safeValue = Math.max(1, nextValue);
     setQuantity(safeValue);
     setForm((current) => ({ ...current, quantity: safeValue }));
+  };
+
+  const handleDeliveryTypeChange = (nextType: DeliveryType) => {
+    setDeliveryType(nextType);
+    setForm((current) => ({ ...current, deliveryType: nextType }));
   };
 
   const openBooking = (materialId?: string) => {
@@ -200,6 +211,7 @@ export default function Home() {
       ...current,
       materialId: target,
       quantity: quantity,
+      deliveryType,
     }));
     setSelectedMaterialId(target);
     setIsBookingOpen(true);
@@ -239,20 +251,20 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-stone-100 text-slate-900">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-lg font-extrabold text-white">
+        <nav className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-base font-extrabold text-white sm:h-10 sm:w-10 sm:text-lg">
               C
             </div>
-            <div>
-              <p className="text-lg font-black tracking-wide text-white">CRUSHER</p>
-              <p className="text-[10px] uppercase tracking-[0.28em] text-slate-400">
+            <div className="min-w-0">
+              <p className="text-base font-black tracking-wide text-white sm:text-lg">CRUSHER</p>
+              <p className="text-[9px] uppercase tracking-[0.22em] text-slate-400 sm:text-[10px]">
                 Materials Co.
               </p>
             </div>
           </div>
 
-          <div className="hidden items-center gap-8 text-sm text-slate-200 lg:flex">
+          <div className="hidden items-center gap-6 text-sm text-slate-200 lg:flex">
             <a href="#home" className="transition hover:text-orange-400">Home</a>
             <a href="#materials" className="transition hover:text-orange-400">Materials</a>
             <a href="#how-it-works" className="transition hover:text-orange-400">How It Works</a>
@@ -261,17 +273,17 @@ export default function Home() {
             <a href="#login" className="transition hover:text-orange-400">Login</a>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <a
               href={`tel:${BUSINESS_PHONE.replace(/\s+/g, "")}`}
-              className="hidden rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-orange-400 hover:text-orange-300 sm:inline-flex"
+              className="hidden rounded-full border border-white/20 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-orange-400 hover:text-orange-300 sm:inline-flex sm:px-4 sm:text-sm"
             >
               Call to Book
             </a>
             <button
               type="button"
               onClick={() => openBooking()}
-              className="rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition hover:bg-orange-400"
+              className="rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-orange-500/30 transition hover:bg-orange-400 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               Order Now
             </button>
@@ -281,66 +293,71 @@ export default function Home() {
 
       <main>
         <section id="home" className="relative isolate overflow-hidden bg-slate-950 text-white">
-          <img
+          <Image
             src="/stone-crusher.jpg"
             alt="Crushed stone material pile"
-            className="absolute inset-0 h-full w-full object-cover opacity-30 grayscale-[0.15]"
+            fill
+            priority
+            className="object-cover opacity-30 grayscale-[0.15]"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-950/50" />
 
-          <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-28">
+          <div className="relative mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10 lg:px-8 lg:py-24">
             <div className="max-w-2xl">
-              <div className="mb-6 inline-flex items-center rounded-full border border-orange-400/40 bg-orange-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-orange-200">
+              <div className="mb-5 inline-flex items-center rounded-full border border-orange-400/40 bg-orange-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-orange-200 sm:mb-6 sm:text-xs">
                 Trusted local construction supply
               </div>
-              <h1 className="text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+              <h1 className="text-3xl font-black leading-tight sm:text-4xl lg:text-6xl">
                 Building Your Dream? We&apos;ll Deliver the Materials.
               </h1>
-              <p className="mt-6 max-w-xl text-lg text-slate-200">
+              <p className="mt-4 max-w-xl text-base text-slate-200 sm:mt-6 sm:text-lg">
                 Order quality construction materials with ease. Choose your materials,
                 select your quantity, and get them delivered directly to your construction
                 site.
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-4">
+              <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
                 <button
                   type="button"
                   onClick={() => openBooking()}
-                  className="rounded-full bg-orange-500 px-6 py-3 font-semibold text-white shadow-lg shadow-orange-500/30 transition hover:bg-orange-400"
+                  className="w-full rounded-full bg-orange-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition hover:bg-orange-400 sm:w-auto"
                 >
                   Order Materials
                 </button>
                 <a
                   href={`tel:${BUSINESS_PHONE.replace(/\s+/g, "")}`}
-                  className="rounded-full border border-white/20 bg-white/5 px-6 py-3 font-semibold text-white transition hover:border-orange-400 hover:text-orange-300"
+                  className="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
                 >
                   Call to Book
                 </a>
               </div>
 
-              <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-3 sm:gap-4">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                  <p className="text-3xl font-black text-white">1500+</p>
-                  <p className="text-sm text-slate-300">Orders delivered</p>
+                  <p className="text-2xl font-black text-white sm:text-3xl">1500+</p>
+                  <p className="text-xs text-slate-300 sm:text-sm">Orders delivered</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                  <p className="text-3xl font-black text-white">4.9/5</p>
-                  <p className="text-sm text-slate-300">Customer rating</p>
+                  <p className="text-2xl font-black text-white sm:text-3xl">4.9/5</p>
+                  <p className="text-xs text-slate-300 sm:text-sm">Customer rating</p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                  <p className="text-3xl font-black text-white">24/7</p>
-                  <p className="text-sm text-slate-300">Support coverage</p>
+                <div className="col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm sm:col-span-1">
+                  <p className="text-2xl font-black text-white sm:text-3xl">24/7</p>
+                  <p className="text-xs text-slate-300 sm:text-sm">Support coverage</p>
                 </div>
               </div>
             </div>
 
-            <aside className="rounded-[28px] border border-white/10 bg-white/8 p-5 shadow-2xl shadow-slate-950/40 backdrop-blur-md">
+            <aside className="w-full rounded-[28px] border border-white/10 bg-white/8 p-4 shadow-2xl shadow-slate-950/40 backdrop-blur-md sm:p-5 lg:max-w-[430px] lg:justify-self-end">
               <div className="mb-4 overflow-hidden rounded-2xl border border-stone-200 bg-stone-100">
-                <img
-                  src="/stone-crusher.jpg"
-                  alt="Crushed stone product photo"
-                  className="h-44 w-full object-cover"
-                />
+                <div className="relative h-44 w-full">
+                  <Image
+                    src="/stone-crusher.jpg"
+                    alt="Crushed stone product photo"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
               </div>
 
               <div className="mb-4 flex items-center justify-between">
@@ -389,16 +406,43 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="mt-5 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4 text-sm text-slate-100">
+              <div className="mt-5 space-y-3 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4 text-sm text-slate-100">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.18em] text-orange-200">Delivery speed</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(DELIVERY_CHARGES).map(([optionKey, charge]) => {
+                      const option = optionKey as DeliveryType;
+                      const active = deliveryType === option;
+
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => handleDeliveryTypeChange(option)}
+                          className={`rounded-xl border px-3 py-2 text-left transition ${
+                            active
+                              ? "border-orange-400 bg-orange-500/20 text-white"
+                              : "border-white/10 bg-slate-900/50 text-slate-300"
+                          }`}
+                        >
+                          <span className="block text-[10px] uppercase tracking-[0.18em]">
+                            {option}
+                          </span>
+                          <span className="mt-1 block font-semibold">KSh {charge.toLocaleString()}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <div className="flex items-center justify-between">
                   <span>Material subtotal</span>
                   <strong>{`KSh ${subtotal.toLocaleString()}`}</strong>
                 </div>
-                <div className="mt-2 flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <span>Delivery charge</span>
                   <strong>{`KSh ${deliveryCharge.toLocaleString()}`}</strong>
                 </div>
-                <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3 text-base font-bold text-white">
+                <div className="flex items-center justify-between border-t border-white/10 pt-3 text-base font-bold text-white">
                   <span>Estimated total</span>
                   <span>{`KSh ${estimatedTotal.toLocaleString()}`}</span>
                 </div>
@@ -435,7 +479,12 @@ export default function Home() {
             {materials.map((material) => (
               <article key={material.id} className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-lg shadow-slate-200/60 transition hover:-translate-y-1 hover:shadow-xl">
                 <div className="relative h-60 overflow-hidden">
-                  <img src={material.image} alt={material.name} className="h-full w-full object-cover" />
+                  <Image
+                    src={material.image}
+                    alt={material.name}
+                    fill
+                    className="object-cover"
+                  />
                   <div className={`absolute inset-0 bg-gradient-to-t ${material.accent} opacity-25`} />
                   <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-900">
                     {material.availability}
@@ -489,7 +538,7 @@ export default function Home() {
                       href={`tel:${BUSINESS_PHONE.replace(/\s+/g, "")}`}
                       className="rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-orange-400 hover:text-orange-600"
                     >
-                      Call to Book
+                      Call
                     </a>
                   </div>
                 </div>
@@ -589,9 +638,11 @@ export default function Home() {
         <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="overflow-hidden rounded-[30px] shadow-xl shadow-slate-300/60">
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80"
                 alt="Truck delivering construction materials"
+                width={1200}
+                height={900}
                 className="h-full w-full object-cover"
               />
             </div>
@@ -877,11 +928,37 @@ export default function Home() {
                     </div>
                     <div className="flex items-center justify-between border-t border-slate-200 pt-3">
                       <span className="text-sm text-slate-500">Delivery charges</span>
-                      <span className="font-semibold text-slate-900">KSh {deliveryCharge.toLocaleString()}</span>
+                      <span className="font-semibold text-slate-900">KSh {formDeliveryCharge.toLocaleString()}</span>
                     </div>
                     <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-base font-bold text-slate-900">
                       <span>Estimated total</span>
                       <span>KSh {formTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] bg-slate-50 p-4">
+                    <p className="mb-2 text-sm font-medium text-slate-700">Delivery speed</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(DELIVERY_CHARGES).map(([optionKey, charge]) => {
+                        const option = optionKey as DeliveryType;
+                        const active = form.deliveryType === option;
+
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => handleDeliveryTypeChange(option)}
+                            className={`rounded-xl border px-3 py-2 text-left transition ${
+                              active
+                                ? "border-orange-400 bg-orange-100 text-slate-900"
+                                : "border-slate-200 bg-white text-slate-600"
+                            }`}
+                          >
+                            <span className="block text-[10px] uppercase tracking-[0.18em]">{option}</span>
+                            <span className="mt-1 block font-semibold">KSh {charge.toLocaleString()}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
